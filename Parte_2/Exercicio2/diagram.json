@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "author": "Felipe",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic1", "top": -123.3, "left": 120.7, "attrs": {} },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": 35.6,
+      "left": -218,
+      "rotate": 180,
+      "attrs": {}
+    },
+    { "type": "board-ssd1306", "id": "oled1", "top": 195.14, "left": 230.63, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:3V3", "ultrasonic1:VCC", "red", [ "h-4.61", "v-57.6" ] ],
+    [ "esp:GND.1", "ultrasonic1:GND", "black", [ "h-52.61", "v67.2", "h270" ] ],
+    [ "esp:5", "ultrasonic1:TRIG", "green", [] ],
+    [ "esp:18", "ultrasonic1:ECHO", "yellow", [] ],
+    [ "esp:5V", "servo1:V+", "red", [ "h-33.41", "v-163.1" ] ],
+    [ "esp:GND.2", "servo1:GND", "black", [ "v-38.4", "h-110.36", "v57.6" ] ],
+    [ "esp:13", "servo1:PWM", "orange", [ "h-23.81", "v-134.2" ] ],
+    [ "esp:3V3", "oled1:VCC", "red", [ "h-33.41", "v-48", "h172.8", "v192", "h47.85" ] ],
+    [ "esp:GND.3", "oled1:GND", "black", [ "h24.04", "v76.8", "h57.6" ] ],
+    [ "esp:21", "oled1:SDA", "blue", [] ],
+    [ "esp:22", "oled1:SCL", "cyan", [] ]
+  ],
+  "dependencies": {}
+}
