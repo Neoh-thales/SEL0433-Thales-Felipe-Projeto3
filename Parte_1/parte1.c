@@ -1,3 +1,7 @@
+// Alunos:
+// Felipe Assis Bernardes Falvo - NUSP: 15004433
+// Thales Vasconcelos Aguiar de Oliveira - NUSP: 15489730
+
 #include <Arduino.h>
 // Exportar a biblioteca arduino
 
