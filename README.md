@@ -7,7 +7,7 @@
 * Felipe Assis Bernardes Falvo | NUSP: 15004433
 
 ## 🚀 1. Visão Geral
-Esse repositório tem como objetivo o desenvolvimento do Projeto 3, no qual é utilizado a ESP32 para o controle de periféricos por meio do PWM. O projeto é dividido em três partes que vão desde o controle de um LED RGB, leitura ADC de um servo, até o desenvolvimento de uma cancela de pedágio com telemetria via wifi e página web. Toda a validação foi realizada no simulador Wokwi mencionado durante as aulas.
+Esse repositório tem como objetivo o desenvolvimento do Projeto 3, no qual é utilizado a ESP32 para o controle de periféricos por meio do PWM. O projeto é dividido em três partes que vão desde o controle de um LED RGB, leitura ADC de um servo, até o desenvolvimento de uma cancela de pedágio com wifi e página web. Toda a validação foi realizada no simulador Wokwi mencionado durante as aulas.
 
 ---
 
@@ -26,7 +26,7 @@ O sistema foi simulado no Wokwi utilizando o ESP32 com o seguinte mapeamento de 
 ### ⚙️ Firmware e Lógica de Controle
 O código (`Parte_1.c`) foi desenvolvido em linguagem C utilizando o framework do Arduino para ESP32.
 
-* **Configuração do PWM (LEDC):** O hardware de controle do LED foi configurado com uma **frequência base de 5 kHz** para manter a iluminação constante. A **resolução foi colocado em 8 bits**, permitindo que a intensidade da luz varie em uma escala de 0 a 255. Os pinos 19, 18 e 5 foram colocados aos canais usando a função `ledcAttach()`.
+* **Configuração do PWM (LEDC):** O hardware de controle do LED foi configurado com uma **frequência de 5 kHz** para manter a iluminação constante. A **resolução foi colocado em 8 bits**, permitindo que a intensidade da luz varie em uma escala de 0 a 255. Os pinos 19, 18 e 5 foram colocados aos canais usando a função `ledcAttach()`.
 * **Lógica de Variação de Cores:** O código roda em um ciclo, atualizando o brilho (*duty cycle*) de cada cor a cada 500 ms. Foram escolhidos passos diferentes para cada pino, criando um efeito visual dinâmico onde as cores se misturam em tempos diferentes:
   * **Verde:** Aumenta de forma mais lenta, em passos de **5**.
   * **Azul:** Aumenta o dobro mais rápido, em passos de **10**.
@@ -35,7 +35,7 @@ O código (`Parte_1.c`) foi desenvolvido em linguagem C utilizando o framework d
 * **Interface Serial:** A cada atualização das luzes, o microcontrolador envia os dados pela porta serial a **115200 bps**. Logo, usando o `Serial.printf`, o sistema mostra na tela qual é o *duty cycle* atual de cada LED e o incremento, podendo assim acompanhar o funcionamento do circuito.
 
 ### 📚 Conceitos, Bibliotecas e Código
-Nesta etapa fundamental, não foram necessárias bibliotecas externas. Explorou-se o conceito físico e matemático de **PWM (Pulse Width Modulation)**, onde a tensão média entregue ao LED (e consequentemente o brilho) é controlada variando o tempo em que o sinal elétrico permanece em nível alto (Duty Cycle) em uma alta frequência.
+Nesta etapa fundamental, não foram necessárias bibliotecas externas. Explorou-se o conceito de **PWM (Pulse Width Modulation)**, onde a tensão média entregue ao LED (e consequentemente o brilho) é controlada variando o tempo em que o sinal elétrico permanece em nível alto (Duty Cycle) em uma alta frequência.
 O principal trecho de código demonstra a manipulação do registrador de hardware e do controle de fluxo:
 ```c
   // Atualiza o ciclo de trabalho do Led Vermelho
@@ -83,7 +83,7 @@ O circuito foi implementado no simulador Wokwi utilizando:
 ### ⚙️ Firmware e Lógica de Controle
 A lógica desenvolvida no código `Parte_2_1.c` explora a biblioteca `ESP32Servo` para abstrair os complexos registradores de hardware e facilitar a modulação do motor.
 
-* **Alocação de Temporizadores (Timers):** Para garantir o controle do sinal PWM enviado ao servomotor, o sistema aloca quatro Timers de hardware independentes (0 a 3) no início da função `setup()`. Essa alocação, realizada através do comando `ESP32PWM::allocateTimer()`, garante que a modulação do motor ocorra de forma dedicada.
+* **Alocação de Temporizadores (Timers):** Para garantir o controle do sinal PWM enviado ao servomotor, o sistema aloca quatro Timers (0 a 3) no início da função `setup()`. Essa alocação, realizada através do comando `ESP32PWM::allocateTimer()`, garante que a modulação do motor ocorra de forma dedicada.
 * **Configuração Base do Servo:** A frequência central do pino PWM é cravada em **50 Hz**, que é o padrão para servo. Os limites de pulso (*duty cycle*) foram feitos na função `attach()` limitando no intervalo de **500 μs** (ângulo 0°) a **2500 μs** (ângulo 180°).
 * **Leitura Analógica e Conversão (ADC):** No `loop()`, o pino analógico 35 amostra constantemente a queda de tensão resultante do potenciômetro. O conversor A/D da ESP32 possui **12 bits** de resolução linear, gerando valores de `0` até `4095`.
 * **Mapeamento Angular:** Para diminuir o processamento, a conversão do valor lido pelo ADC é feito pela função `map()`, no qual ela projeta a escala de `0 a 4095` diretamente para o intervalo de `0 a 180` graus do servo.
@@ -150,21 +150,21 @@ O circuito foi modelado no Wokwi utilizando o seguinte mapeamento:
 ### ⚙️ Firmware e Máquina de Estados (FSM)
 O software principal em `Parte_2_2.c` baseia-se em um fluxo não-bloqueante orientado a Máquina de Estados e comunicação Web.
 
-* **Convivência de Subsistemas:** A ESP32 gerencia, simultaneamente, o stack de rede (Wi-Fi), a interface de vídeo I2C (OLED) e a geração de PWM (Servo). Para suportar essa forte concorrência no processador sem quedas de conexão, foram alocados 4 Timers de hardware de forma explícita.
-* **Leitura Ultrassônica (Radar):** A função `medirDistancia()` aciona o pino `TRIG` e calcula a distância baseada na velocidade teórica do som. Para evitar travamentos severos no processamento (*blocking*) caso o pulso se perca no vazio, a instrução `pulseIn()` foi limitada com um *timeout* rigoroso de 30.000 μs.
-* **Segurança Anti-Esmagamento e Estados:** O ciclo `loop()` funciona como uma FSM (Finite State Machine) dividida em dois estados práticos:
-  * **Estado 1 (Cancela Fechada):** Se o sonar detectar um veículo a menos de 200 cm (2 metros), o servo recebe a instrução para o ângulo de 90° (abertura). Uma *flag* altera o estado lógico e o momento exato do disparo (em milissegundos via `millis()`) é armazenado na variável `tempo_abertura`.
-  * **Estado 2 (Cancela Aberta):** O sistema exige que **duas** condições sejam validadas simultaneamente para retornar a cancela à estaca zero (0°): (a) a área de passagem deve estar totalmente livre do veículo (distância > 200cm) **E** (b) o tempo de segurança anti-esmagamento de 3 segundos (`tempo_espera_fechar`) deve ter expirado.
-* **Conectividade Wi-Fi:** A ESP32 é programada para se conectar à rede de internet do simulador (`Wokwi-GUEST`). Ao ligar (dentro do `setup()`), a placa aciona sua antena e aguarda até receber permissão e ganhar um endereço IP. Assim que a conexão é feita com sucesso, esse número IP (como `10.10.0.2`) aparece na tela do OLED para que o usuário saiba qual endereço digitar no navegador.
-* **IoT Web Server (Site da Cancela):** O que deveria acontecer na placa física (Limitação do simulador): a placa ESP32 atua como um mini servidor de internet. O comando `server.handleClient()` fica "escutando" para ver se alguém está tentando acessar o IP dela. Quando acessada, ela monta uma página HTML com as informações (cancela, distância e carros) e envia para o usuário. **Por que isso não funciona no Wokwi?** Porque o Wi-Fi do Wokwi e o IP gerado (`10.10.0.2`) são virtuais e fechados dentro do simulador. Esse IP não existe na rede real da sua casa. Portanto, se você tentar abrir o navegador do seu PC e digitar esse endereço, a conexão vai falhar. Para ver a página web rodando de verdade, seria necessário gravar esse mesmo código em uma ESP32 física conectada ao roteador da sua casa.
+* **Subsistemas:** A ESP32 gerencia o Wi-Fi, a interface I2C (OLED) e a geração de PWM (Servo). Para suportar isso no processador, foram alocados 4 Timers.
+* **Leitura do ultrassom:** A função `medirDistancia()` aciona o pino `TRIG` e calcula a distância baseada na velocidade do som. Para evitar travar o processamento caso o pulso se perca no vazio, a instrução `pulseIn()` foi limitada com um *timeout* de 30.000 μs.
+* **Lógica de Estados:** O ciclo `loop()` é dividido em dois estados:
+  * **Estado 1 (Cancela Fechada):** Se o sensor detectar um veículo a menos de 200 cm (2 metros), o servo recebe a instrução para o ângulo de 90° (abertura). Uma *flag* altera o estado lógico e o momento do disparo (em milissegundos via `millis()`) é armazenado na variável `tempo_abertura`.
+  * **Estado 2 (Cancela Aberta):** O sistema exige que **duas** condições sejam validadas para retornar a cancela à estaca zero (0°): (a) a região de passagem deve estar livre (distância > 200cm) **E** (b) o tempo de segurança de 3 segundos (`tempo_espera_fechar`) deve ter acabadp.
+* **Conectividade Wi-Fi:** A ESP32 é programada para se conectar à rede de internet do simulador (`Wokwi-GUEST`). Ao ligar (dentro do `setup()`), a placa aciona e aguarda até receber permissão e ganhar um endereço IP. Assim que a conexão é feita com sucesso, esse número IP (como `10.10.0.2`) aparece na tela do OLED para que o usuário saiba qual endereço digitar no navegador.
+* **IoT Web Server (Site da Cancela):** O que deveria acontecer na placa física (Limitação do simulador): a placa ESP32 atua como um mini servidor de internet. O comando `server.handleClient()` fica verificando para ver se alguém está tentando acessar o IP dela. Quando acessada, ela monta uma página HTML com as informações (cancela, distância e carros) e envia para o usuário. **Isso não funciona no Wokwi** porque o Wi-Fi do Wokwi e o IP gerado (`10.10.0.2`) são virtuais e fechados dentro do simulador. Esse IP não existe na rede real da sua casa. Portanto, se você tentar abrir o navegador do seu PC e digitar esse endereço, a conexão vai falhar. Para ver a página web rodando de verdade, seria necessário gravar esse mesmo código em uma ESP32 conectada ao roteador real.
 
 ### 📚 Conceitos, Bibliotecas e Código
 O projeto utilizou conceitos de **Sistemas Concorrentes** (Servidor Web e Controle Físico rodando juntos), **Lógica de estados** e **Timeouts** para evitar processos bloqueantes no Loop Principal. Foram empregadas as seguintes bibliotecas:
-* **`<WiFi.h>` e `<WebServer.h>`:** Conjunto responsável pela internet. A `WiFi.h` conecta a placa no Wi-Fi e "pega" o endereço IP. Já a `WebServer.h` cria o "site" (servidor HTTP) dentro da placa, recebendo os acessos externos e montando a página HTML em tempo real com as informações da cancela.
-* **`<Wire.h>`, `<Adafruit_GFX.h>` e `<Adafruit_SSD1306.h>`:** Conjunto responsável pelo display OLED. A `Wire.h` faz a comunicação pelos pinos SDA e SCL. As bibliotecas da Adafruit funcionam como um painel de desenho, permitindo escrever e organizar os textos antes de enviá-los para acender na telinha física usando o `display.display()`.
-* **`<ESP32Servo.h>`:** Biblioteca dedicada para controlar o braço da cancela. Ela transforma ângulos simples (0 a 180 graus) em pulsos elétricos precisos. Para garantir que o motor não "engasgue" enquanto o Wi-Fi trabalha, ela usa temporizadores de hardware exclusivos para o sinal do motor.
+* **`<WiFi.h>` e `<WebServer.h>`:** Conjunto responsável pela internet. A `WiFi.h` conecta a placa no Wi-Fi e pega o endereço IP. Já a `WebServer.h` cria o site (servidor HTTP) dentro da placa e montando a página HTML em tempo real com as informações da cancela.
+* **`<Wire.h>`, `<Adafruit_GFX.h>` e `<Adafruit_SSD1306.h>`:** Conjunto responsável pelo display OLED. A `Wire.h` faz a comunicação pelos pinos SDA e SCL. As bibliotecas da Adafruit funcionam como um painel, permitindo escrever e organizar os textos na tela usando o `display.display()`.
+* **`<ESP32Servo.h>`:** Biblioteca dedicada para controlar o braço da cancela. Ela transforma ângulos (0 a 180 graus) em pulsos elétricos. Para garantir que o motor não trave enquanto o Wi-Fi funciona, ela usa temporizadores de hardware para o sinal do motor.
 
-O trecho de destaque ilustra a Máquina de Estados não-bloqueante baseada em tempo assíncrono:
+O trecho de destaque ilustra a lógica de estados:
 ```c
   // Estado 1 - Cancela Fechada:
   if (!cancela_aberta) {
@@ -184,20 +184,18 @@ O trecho de destaque ilustra a Máquina de Estados não-bloqueante baseada em te
 ```
 
 ### ⚠️ Apêndice Técnico: Justificativa para a não utilização da driver/mcpwm.h
-Embora a rubrica acadêmica deste projeto solicitasse o uso da biblioteca nativa `driver/mcpwm.h`, foi identificada uma **limitação no motor gráfico do simulador Wokwi**. Especificamente, o simulador apresenta um bug onde os sinais PWM gerados pelo periférico de hardware MCPWM da ESP32 falham em acionar visualmente o braço do componente `Wokwi-Servo`, resultando em um hardware "morto" na tela e inviabilizando a avaliação do projeto.
+Embora o projeto mencionasse o uso da biblioteca nativa `driver/mcpwm.h`, foi visto uma **limitação no motor gráfico do simulador Wokwi**. O simulador apresenta um bug onde os sinais PWM gerados pelo MCPWM da ESP32 falham em acionar visualmente o servo do componente `Wokwi-Servo`, resultando em um hardware parado na tela.
 
-Para contornar esse problema e demonstrar domínio sobre falhas de ferramentas de terceiros, optamos pela seguinte abordagem:
-1. **Adaptação para Simulação:** O código principal foi migrado para a biblioteca `ESP32Servo`. Isso permitiu que a simulação visual da cancela funcionasse perfeitamente na tela, garantindo a validação completa da lógica pelo avaliador.
-2. **Desenvolvimento Teórico Mantido:** Para não perder a nota do requisito original, o final do arquivo `Parte_2_2.c` contém toda a lógica estrutural (como `mcpwm_config_t` e a função `MCPWM_driver()`) programada e comentada, provando o entendimento de como ela seria aplicada em uma placa física real.
-3. **Comprovação do Bug:** Criamos uma pasta anexa chamada `Teste_MCPWM_Wokwi/` no repositório contendo um código isolado apenas para evidenciar e documentar essa falha de renderização do simulador.
+Para resolver isso problema tem-se a seguinte ideia:
+1. **Adaptação para Simulação:** O código foi migrado para a biblioteca `ESP32Servo`. Isso permitiu que a simulação visual da cancela funcionasse perfeitamente na tela.
+2. **Desenvolvimento Teórico Mantido:** Para não perder a nota do requisito original, o final do arquivo `Parte_2_2.c` contém toda a lógica estrutural (como `mcpwm_config_t` e a função `MCPWM_driver()`) programada e comentada, provando o entendimento de como ela seria aplicada em uma placa real.
 
 ### 💻 Como Simular a Parte 2.2
 1. Importe os arquivos `parte_2.2.c` e `diagram.json` (presentes na pasta `Parte_2/Exercicio2/`) para o **Wokwi**.
-2. **Crucial:** Acesse o **Library Manager** na interface lateral (ou o arquivo `libraries.txt`) e adicione manualmente: `ESP32Servo`, `Adafruit GFX Library`, e `Adafruit SSD1306`.
+2. **Importante:** Acesse o **Library Manager** na interface lateral (ou o arquivo `libraries.txt`) e adicione manualmente: `ESP32Servo`, `Adafruit GFX Library`, e `Adafruit SSD1306`.
 3. Inicie a simulação clicando no botão Play.
 4. O Display OLED irá ligar, se conectar à rede Wi-Fi virtual e exibir o Endereço IP gerado (ex: `10.10.0.2`).
 5. Aproxime a leitura do sensor de ultrassom para menos de 200 cm clicando no sensor e alterando a distância. A cancela se abrirá e o display mudará de "FECHADA" para "ABERTA".
-6. Abra uma nova aba no seu próprio navegador web, digite o IP e acompanhe o Dashboard do Pedágio IoT sendo atualizado!
 
 ### 📸 Circuito e Demonstração
 **Esquemático de circuito:**
@@ -228,8 +226,6 @@ Para contornar esse problema e demonstrar domínio sobre falhas de ferramentas d
 ---
 
 ## 📊 2. Discussão Geral dos Resultados
-O desenvolvimento desse projeto mostrou a vantagem da ESP32 em resolver problemas complexos. Na **Parte 1**, o controle nativo do PWM permitiu misturar as cores do LED RGB suavemente, sem travar ou sobrecarregar a placa. Na **Parte 2.1**, aplicamos a eletrônica básica para ler um componente real (o potenciômetro) e, através de uma conversão matemática simples (`map`), transformar essa tensão lida no ângulo exato do braço do motor.
+O desenvolvimento desse projeto mostrou a vantagem da ESP32 em resolver problemas complexos. Na **Parte 1**, o controle nativo do PWM permitiu misturar as cores do LED RGB suavemente, sem travar ou sobrecarregar a placa. Na **Parte 2.1**, aplicamos conceitos básicos para ler o potenciômetro e, através de uma conversão (`map`), transformar essa tensão no ângulo do braço do servo motor.
 
-Os maiores desafios apareceram na **Parte 2.2**. O grande problema que precisávamos evitar era fazer com que o processamento do Wi-Fi ou a leitura do sensor ultrassônico não "roubassem" o tempo do motor, o que faria a cancela engasgar. Nós resolvemos isso de duas formas: usando **Timers dedicados de hardware** (que cuidam do motor de forma independente) e montando uma **Lógica de Estados** inteligente. Essa lógica abandonou o uso do comando `delay()` (que pausa e trava o código inteiro) e passou a usar o `millis()`, que funciona como um cronômetro contínuo que não atrapalha o resto do sistema.
-
-Dessa forma, o sistema final não só cumpriu tudo o que a disciplina pediu, mas também entregou um projeto robusto. A cancela ignora falhas no radar, tem um tempo de segurança para não esmagar os carros, e ainda consegue enviar seus dados ao vivo para um site na internet, provando que a ESP32 é uma ferramenta excelente para a área de Internet das Coisas (IoT).
+Os maiores desafios apareceram na **Parte 2.2**. O grande problema que precisávamos evitar era fazer com que o processamento do Wi-Fi ou a leitura do sensor ultrassônico não "roubassem" o tempo do motor, o que faria a cancela engasgar. Nós resolvemos isso de duas formas: usando **Timers dedicados de hardware** (que cuidam do motor de forma independente) e montando uma **Lógica de Estados** inteligente. Essa lógica abandonou o uso do comando `delay()` e passou a usar o `millis()`, que funciona como um cronômetro contínuo que não atrapalha o resto do sistema.
