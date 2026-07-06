@@ -134,7 +134,7 @@ O trecho de destaque ilustra a extração matemática da escala de 12 bits para 
 
 ---
 
-## 🚧 Parte 2.2: Cancela Inteligente de Pedágio (IoT Web Server)
+## 🚧 Parte 2.2: Cancela de Pedágio com Web Server
 
 A etapa final do projeto eleva a complexidade integrando o controle PWM de servomotores à leitura de sensores ultrassônicos e telemetria Wi-Fi. O objetivo é simular uma cancela de pedágio automatizada, responsiva e conectada.
 
@@ -147,7 +147,7 @@ O circuito foi modelado no Wokwi utilizando o seguinte mapeamento:
 * **Display OLED (SSD1306):** Atua como o painel de operação local via barramento I2C (`SDA = 21`, `SCL = 22`).
 * **Conectividade Wi-Fi:** Módulo interno da ESP32 conectado à rede virtual `Wokwi-GUEST`.
 
-### ⚙️ Firmware e Máquina de Estados (FSM)
+### ⚙️ Firmware e Lógica de Estados
 O software principal em `Parte_2_2.c` baseia-se em um fluxo não-bloqueante orientado a Máquina de Estados e comunicação Web.
 
 * **Subsistemas:** A ESP32 gerencia o Wi-Fi, a interface I2C (OLED) e a geração de PWM (Servo). Para suportar isso no processador, foram alocados 4 Timers.
