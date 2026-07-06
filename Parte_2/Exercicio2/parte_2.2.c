@@ -108,6 +108,7 @@ void setup() {
   // configuração do OLED:
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
+  display.setTextColor(WHITE);
 
   // Configurações do Wifi:
   Serial.println("Ligando o Wifi:");
@@ -130,7 +131,6 @@ void setup() {
   server.begin(); // serviço que ficará rodando em segundo plano
 
   // Configuração do servo:
-  // A ESP32 possui um conflito interno entre a antena Wi-Fi e a biblioteca padrão
   // alocação manualmente os 4 Timers de hardware (0 a 3).
   ESP32PWM::allocateTimer(0);
   ESP32PWM::allocateTimer(1);
@@ -187,14 +187,13 @@ void loop() {
   // Configuração para mostrar os dados
   display.setCursor(0,0);
   display.setTextSize(1); // Fonte pequena padrão
-  display.println(" PEDAGIO");
-  display.println("---------------");
+  display.println("     PEDAGIO");
+  display.println("---------------------");
   
-  // Feedback do Sensor em tempo real
-  display.printf("Distancia: %d cm\n\n", distancia_carro);
+  display.printf("Radar: %d cm\n", distancia_carro);
+  display.printf("Carros: %d\n\n", qtd_carros);
   
-  // Feedback Visual Crítico de Estado
-  display.setTextSize(2); // Fonte grande para chamar a atenção do operador
+  display.setTextSize(2);
   if (cancela_aberta) {
     display.println(" ABERTA ");
   } else {
@@ -203,7 +202,7 @@ void loop() {
   
   // mostrando o IP no OLED
   display.setTextSize(1);
-  display.printf("\nIP: %s\n", WiFi.localIP().toString().c_str());
+  display.printf("IP: %s\n", WiFi.localIP().toString().c_str());
   
   // envia para o OLED
   display.display();
